@@ -185,24 +185,7 @@ src/
 
 Actualmente TypeORM usa `synchronize: true` en `src/db.ts`, por lo que crea/actualiza tablas automáticamente durante el desarrollo. Para producción, se recomienda desactivar `synchronize` y usar migraciones.
 
-## 7) Pruebas rápidas con curl (opcional)
-
-```powershell
-# Crear proyecto
-curl -X POST http://localhost:3000/api/projects `
-  -H "Content-Type: application/json" `
-  -d '{"name":"Proyecto X","description":"Desc","startDate":"2025-01-01","endDate":"2025-12-31"}'
-
-# Listar proyectos
-curl http://localhost:3000/api/projects
-
-# Generar análisis con IA (Gemini)
-curl "http://localhost:3000/api/analisis"
-
-# Usa por defecto el modelo gemini-2.5-pro
-```
-
-## 8) Scripts útiles
+## 7) Scripts útiles
 
 - `npm run dev` – modo desarrollo con autoreload
 - `npm run build` – compilar TypeScript a `dist/`
