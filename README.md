@@ -202,32 +202,7 @@ curl "http://localhost:3000/api/analisis"
 # Usa por defecto el modelo gemini-2.5-pro
 ```
 
-## 8) Resolución de problemas
-
-### Error de conexión a la base de datos
-- **Docker**: Verifica que el contenedor de PostgreSQL esté corriendo: `docker-compose ps`
-- **Local**: Asegúrate de que PostgreSQL esté iniciado y las credenciales en `.env` sean correctas
-
-### Puerto en uso (3000)
-- Cambia `PORT` en `.env` o el mapeo de puertos en `docker-compose.yml`
-- Verifica qué proceso está usando el puerto: `netstat -ano | findstr :3000`
-
-### Swagger sin ejemplos
-- Recarga `/api-docs` en el navegador
-- Verifica que existan los bloques `@swagger` en los archivos de rutas
-- Confirma que `src/swagger.ts` tenga configurado `apis: ["./src/**/*.ts"]`
-
-### Errores de IA/Análisis
-- **API Key no configurada**: Asegúrate de definir `GEMINI_API_KEY` en `.env` o `docker-compose.yml`
-- **Rate limit excedido**: El tier gratuito tiene límite de 15 requests/minuto
-- **Modelo por defecto**: se usa `gemini-2.5-pro`
-
-### Docker no inicia
-- Verifica que Docker Desktop esté corriendo
-- Revisa los logs: `docker-compose logs`
-- Elimina volúmenes y reconstruye: `docker-compose down -v && docker-compose up --build -d`
-
-## 9) Scripts útiles
+## 8) Scripts útiles
 
 - `npm run dev` – modo desarrollo con autoreload
 - `npm run build` – compilar TypeScript a `dist/`
