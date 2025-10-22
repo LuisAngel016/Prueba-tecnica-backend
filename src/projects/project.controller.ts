@@ -81,6 +81,32 @@ export class ProjectController {
 
             const updateProjectDto = await validateDto(UpdateProjectDto, req.body);
 
+            // Si se proporciona un nombre, validar que no exista otro proyecto (activo o inactivo) con el mismo nombre
+            if (updateProjectDto.name) {
+                const existingByName = await Project.findOne({ where: { name: updateProjectDto.name } });
+                if (existingByName && existingByName.id !== id) {
+                    // Si existe otro proyecto con el mismo nombre y está activo -> conflicto
+                    if (existingByName.active) {
+                        return res.status(409).json({
+                            error: 'Conflicto de duplicado',
+                            message: 'Ya existe un proyecto activo con ese nombre'
+                        });
+                    }
+
+                    // Si existe otro proyecto con el mismo nombre pero INACTIVO -> reactivarlo (igual que en create)
+                    existingByName.active = true;
+                    // Usar las fechas provistas en el payload cuando estén, si no mantener las existentes
+                    existingByName.startDate = updateProjectDto.startDate || existingByName.startDate;
+                    existingByName.endDate = updateProjectDto.endDate || existingByName.endDate;
+                    if (updateProjectDto.state) {
+                        existingByName.state = updateProjectDto.state;
+                    }
+                    // No sobrescribimos el nombre porque ya coincide
+                    await existingByName.save();
+                    return res.status(200).json(existingByName);
+                }
+            }
+
             // Calcular fechas efectivas a validar
             const effectiveStart = updateProjectDto.startDate || project.startDate;
             const effectiveEnd = updateProjectDto.endDate || project.endDate;
@@ -175,6 +201,10 @@ export class ProjectController {
         if (!project.active) {
             project.active = true;
             // Solo actualizar fechas si fueron provistas en el payload
+            // También permitir actualizar el nombre al reactivar si viene en el payload
+            if (updateProjectDto.name) {
+                project.name = updateProjectDto.name;
+            }
             if (updateProjectDto.startDate) {
                 project.startDate = effectiveStart;
             }
