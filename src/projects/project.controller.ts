@@ -71,41 +71,10 @@ export class ProjectController {
         const { id } = req.params;
         try {
             // Permitir editar también proyectos inactivos (para reactivarlos)
-            const project = await Project.findOne({ where: { id } });
-            if (!project) {
-                return res.status(404).json({
-                    error: 'Proyecto no encontrado',
-                    message: `No se encontró un proyecto con el ID: ${id}`
-                });
-            }
+            const project = await this.findProjectById(id, res);
+            if (!project) return;
 
             const updateProjectDto = await validateDto(UpdateProjectDto, req.body);
-
-            // Si se proporciona un nombre, validar que no exista otro proyecto (activo o inactivo) con el mismo nombre
-            if (updateProjectDto.name) {
-                const existingByName = await Project.findOne({ where: { name: updateProjectDto.name } });
-                if (existingByName && existingByName.id !== id) {
-                    // Si existe otro proyecto con el mismo nombre y está activo -> conflicto
-                    if (existingByName.active) {
-                        return res.status(409).json({
-                            error: 'Conflicto de duplicado',
-                            message: 'Ya existe un proyecto activo con ese nombre'
-                        });
-                    }
-
-                    // Si existe otro proyecto con el mismo nombre pero INACTIVO -> reactivarlo (igual que en create)
-                    existingByName.active = true;
-                    // Usar las fechas provistas en el payload cuando estén, si no mantener las existentes
-                    existingByName.startDate = updateProjectDto.startDate || existingByName.startDate;
-                    existingByName.endDate = updateProjectDto.endDate || existingByName.endDate;
-                    if (updateProjectDto.state) {
-                        existingByName.state = updateProjectDto.state;
-                    }
-                    // No sobrescribimos el nombre porque ya coincide
-                    await existingByName.save();
-                    return res.status(200).json(existingByName);
-                }
-            }
 
             // Calcular fechas efectivas a validar
             const effectiveStart = updateProjectDto.startDate || project.startDate;
@@ -118,8 +87,6 @@ export class ProjectController {
                     message: dateValidation.message
                 });
             }
-
-            this.applyUpdateConsideringInactive(project, updateProjectDto, effectiveStart, effectiveEnd);
 
             await project.save();
             await project.reload(); // Recarga la instancia actual desde la DB
@@ -188,36 +155,6 @@ export class ProjectController {
             statusCode: 409,
             message: 'Ya existe un proyecto activo con ese nombre',
         };
-    }
-
-    // Aplica actualización considerando si el proyecto estaba inactivo: reactivar y
-    // actualizar SOLO active, fechas y state; si estaba activo, aplicar cambios normalmente.
-    private applyUpdateConsideringInactive(
-        project: Project,
-        updateProjectDto: UpdateProjectDto,
-        effectiveStart: Date,
-        effectiveEnd: Date
-    ): void {
-        if (!project.active) {
-            project.active = true;
-            // Solo actualizar fechas si fueron provistas en el payload
-            // También permitir actualizar el nombre al reactivar si viene en el payload
-            if (updateProjectDto.name) {
-                project.name = updateProjectDto.name;
-            }
-            if (updateProjectDto.startDate) {
-                project.startDate = effectiveStart;
-            }
-            if (updateProjectDto.endDate) {
-                project.endDate = effectiveEnd;
-            }
-            if (updateProjectDto.state) {
-                project.state = updateProjectDto.state;
-            }
-            return;
-        }
-
-        Object.assign(project, updateProjectDto);
     }
 
     private validateDates(startDate: Date, endDate: Date): { valid: boolean; message?: string } {

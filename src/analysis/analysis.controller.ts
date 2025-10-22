@@ -59,15 +59,10 @@ ${descriptions}
                 });
             }
 
-            // Fallback básico con información del error final
+            // Fallback básico: devolver únicamente el resumen generado localmente
             console.warn("⚠️ Gemini fallback después de reintentos:", result.error);
             const summary = this.generateBasicSummary(projects);
-            return res.json({
-                summary,
-                projectCount: projects.length,
-                method: "basic-fallback",
-                error: result.error || "Error desconocido al usar Gemini API",
-            });
+            return res.json({ summary });
         } catch (error: any) {
             res.status(500).json({
                 error: "Error al generar análisis",
