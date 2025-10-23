@@ -69,30 +69,40 @@ export class ProjectController {
 
     async updateProject(req: Request, res: Response) {
         const { id } = req.params;
+        
         try {
-            // Permitir editar también proyectos inactivos (para reactivarlos)
+            // Validar DTO primero
+            const updateData = await validateDto(UpdateProjectDto, req.body);
+
+            // Buscar proyecto para validaciones
             const project = await this.findProjectById(id, res);
             if (!project) return;
 
-            const updateProjectDto = await validateDto(UpdateProjectDto, req.body);
-
-            // Calcular fechas efectivas a validar
-            const effectiveStart = updateProjectDto.startDate || project.startDate;
-            const effectiveEnd = updateProjectDto.endDate || project.endDate;
-
-            const dateValidation = this.validateDates(effectiveStart, effectiveEnd);
-            if (!dateValidation.valid) {
-                return res.status(400).json({
-                    error: 'Validación de fechas',
-                    message: dateValidation.message
-                });
+            // Validar fechas si aplica
+            if (updateData.startDate || updateData.endDate) {
+                const startDate = updateData.startDate || project.startDate;
+                const endDate = updateData.endDate || project.endDate;
+                
+                const dateValidation = this.validateDates(startDate, endDate);
+                if (!dateValidation.valid) {
+                    return res.status(400).json({
+                        error: 'Validación de fechas',
+                        message: dateValidation.message
+                    });
+                }
             }
 
+            // Actualizar proyecto
+            Object.assign(project, updateData);
             await project.save();
-            await project.reload(); // Recarga la instancia actual desde la DB
-            res.json(project);
+
+            return res.json({
+                success: true,
+                data: project
+            });
+
         } catch (error: any) {
-            this.handleDBExceptions(error, res);
+            return this.handleDBExceptions(error, res);
         }
     }
 
